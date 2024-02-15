@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<Session genome="Genome Fasta/ref.fasta" locus="NC_007618.1:0-2121359" version="8">
+    <Resources>
+        <Resource path="Gene_Features/mucRBindingSites.bed" type="bed"/>
+        <Resource path="Site_by_Site/DLON_site_by_site.wig" type="wig"/>
+        <Resource path="Gene_Features/Chromosome_2.gff3" type="gff3"/>
+        <Resource path="Gene_Features/MUCRbinding.wig" type="wig"/>
+        <Resource path="Site_by_Site/WT_site_by_site.wig" type="wig"/>
+        <Resource path="Site_by_Site/MUCR_site_by_site.wig" type="wig"/>
+        <Resource path="Site_by_Site/CCRM_site_by_site.wig" type="wig"/>
+        <Resource path="Gene_Features/Chromosome_1.gff3" type="gff3"/>
+    </Resources>
+    <Panel height="558" name="DataPanel" width="1495">
+        <Track altColor="255,0,0" attributeKey="WT_site_by_site.wig" autoScale="false" clazz="org.broad.igv.track.DataSourceTrack" colorScale="ContinuousColorScale;0.0;-20.0;0.0;20.0;255,0,0;255,255,255;0,0,178" fontSize="10" height="120" id="Site_by_Site/WT_site_by_site.wig" name="WT_site_by_site.wig" renderer="BAR_CHART" visible="true" windowFunction="mean">
+            <DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="20.0" minimum="-20.0" type="LINEAR"/>
+        </Track>
+        <Track altColor="255,0,0" attributeKey="CCRM_site_by_site.wig" autoScale="false" clazz="org.broad.igv.track.DataSourceTrack" colorScale="ContinuousColorScale;0.0;-20.0;0.0;20.0;255,0,0;255,255,255;0,0,178" fontSize="10" height="120" id="Site_by_Site/CCRM_site_by_site.wig" name="CCRM_site_by_site.wig" renderer="BAR_CHART" visible="true" windowFunction="mean">
+            <DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="20.0" minimum="-20.0" type="LINEAR"/>
+        </Track>
+        <Track altColor="255,0,0" attributeKey="DLON_site_by_site.wig" autoScale="false" clazz="org.broad.igv.track.DataSourceTrack" colorScale="ContinuousColorScale;0.0;-20.0;0.0;20.0;255,0,0;255,255,255;0,0,178" fontSize="10" height="120" id="Site_by_Site/DLON_site_by_site.wig" name="DLON_site_by_site.wig" renderer="BAR_CHART" visible="true" windowFunction="mean">
+            <DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="20.0" minimum="-20.0" type="LINEAR"/>
+        </Track>
+        <Track altColor="255,0,0" attributeKey="MUCR_site_by_site.wig" autoScale="false" clazz="org.broad.igv.track.DataSourceTrack" colorScale="ContinuousColorScale;0.0;-20.0;0.0;20.0;255,0,0;255,255,255;0,0,178" fontSize="10" height="120" id="Site_by_Site/MUCR_site_by_site.wig" name="MUCR_site_by_site.wig" renderer="BAR_CHART" visible="true" windowFunction="mean">
+            <DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="20.0" minimum="-20.0" type="LINEAR"/>
+        </Track>
+        <Track attributeKey="MUCRbinding.wig" autoScale="false" clazz="org.broad.igv.track.DataSourceTrack" fontSize="10" height="50" id="Gene_Features/MUCRbinding.wig" name="MUCRbinding.wig" renderer="BAR_CHART" visible="true" windowFunction="max">
+            <DataRange baseline="0.0" drawBaseline="true" flipAxis="false" maximum="15362.0" minimum="0.0" type="LINEAR"/>
+        </Track>
+    </Panel>
+    <Panel height="120" name="FeaturePanel" width="1495">
+        <Track attributeKey="Reference sequence" clazz="org.broad.igv.track.SequenceTrack" fontSize="10" id="Reference sequence" name="Reference sequence" sequenceTranslationStrandValue="POSITIVE" shouldShowTranslation="false" visible="true"/>
+        <Track attributeKey="Chromosome_1.gff3" clazz="org.broad.igv.track.FeatureTrack" fontSize="10" groupByStrand="false" id="Gene_Features/Chromosome_1.gff3" name="Chromosome_1.gff3" visible="true"/>
+        <Track attributeKey="Chromosome_2.gff3" clazz="org.broad.igv.track.FeatureTrack" fontSize="10" groupByStrand="false" id="Gene_Features/Chromosome_2.gff3" name="Chromosome_2.gff3" visible="true"/>
+        <Track attributeKey="mucRBindingSites.bed" clazz="org.broad.igv.track.FeatureTrack" fontSize="10" groupByStrand="false" id="Gene_Features/mucRBindingSites.bed" name="mucRBindingSites.bed" visible="true"/>
+    </Panel>
+    <PanelLayout dividerFractions="0.8408408408408409"/>
+    <HiddenAttributes>
+        <Attribute name="DATA FILE"/>
+        <Attribute name="DATA TYPE"/>
+        <Attribute name="NAME"/>
+    </HiddenAttributes>
+</Session>
