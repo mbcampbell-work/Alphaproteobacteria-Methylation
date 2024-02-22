@@ -1,9 +1,11 @@
 ---
 title: "R Notebook"
 output: html_notebook
+author: Maxwell B. Campbell(Hood)
 ---
 
-# Librarys 
+## Libraries
+
 ```{r setup, include=FALSE}
 library(ggplot2)
 library(readr)
@@ -26,15 +28,20 @@ library(nortest)
 
 ```
 
-# Caulobacter data post-processing, available in /Data/ folder
+## Loading *Caulobacter* data post-processing
+
 ```{r}
 wt_Caulobacter <- read_rds("../../RData/Caulobacter_Data/wt_Caulobacter_clean.rds")
 dlon_Caulobacter <- read_rds("../../RData/Caulobacter_Data/dlon_Caulobacter_clean.rds")
 dalkb_Caulobacter <- read_rds("../../RData/Caulobacter_Data/dalkb_Caulobacter_clean.rds")
 ```
 
+## plotMethylationProbability :
 
-# plotMethylationProbability : Plot probability of methylation across the genome of Caulobacter strains used in Fig 1 C,D and Fig 2 A
+-   Plots probability of methylation across the genome of *Caulobacter* strains
+
+-    Used for the creation of [**Figure 1 C,D and Figure 2A**]{.underline}
+
 ```{r}
 plotMethylationProbability <- function(methylationData, genome_length, title, pointColor, lineColor){
   # Define default sizes for points and lines in the plot.
@@ -113,7 +120,12 @@ plotMethylationProbability(methylationData= dalkb_Caulobacter,
                            lineColor="#e1beef")
 ```
 
-# pairGenomicSites : Groups GANTC motifs into sites (within 2 bps and on opposite strands)
+## pairGenomicSites:
+
+-   Function that groups GANTC motifs into sites (within 2 bps and on opposite strands)
+
+-   Used to when comparing site specific differences
+
 ```{r}
 pairGenomicSites <- function(genomicData) {
   genomicData %>%
@@ -136,6 +148,13 @@ pairGenomicSites <- function(genomicData) {
 }
 ```
 
+## compareMethylationDifferences + compareMethylationAndTranscriptionalDifferences :
+
+-   Function that compares differences between two R9.5 datasets (with option to exclude regions that are deleted). Highlighting outliers
+
+-   compareMethylationAndTranscriptionalDifferences is a modified version allowing input of transcriptional data.
+
+-   Used for the creation of [**Figure 2B and Figure1E**]{.underline}
 
 ```{r}
 compareMethylationDifferences <- function(genomicData1, genomicData2, strain_1, strain_2, exclude_deleted_gene= NULL) {
@@ -211,6 +230,7 @@ compareMotifs<- function(methylationData1, methylationData2, poretype="R9.5"){
 }
 compareMotifs(wt_Caulobacter, dalkb_Caulobacter, poretype="R9.5")
 ```
+
 ```{r fig.height=5, fig.width=5}
 compareMethylationAndTranscriptionalDifferences <- function( genomicData1, genomicData2,transcriptional_data,
                                                              genome_reference, exclude_deleted_gene=NULL){
@@ -282,8 +302,10 @@ compareMethylationAndTranscriptionalDifferences( genomicData1= wt_Caulobacter, g
                                                  transcriptional_data= load("../../RData/Caulobacter_Data/caulobacter_rna_seq.rds"), genome_reference= read.csv("../../RData/Caulobacter_Data/caulobacter_reference.csv"))
 ```
 
+## compareMethylationMotifs:
 
-# compareMethylationMotifs: Creates a histogram of comparing GANTC motif difference between two strains (R.9.5 data)
+-   Function that creates a histogram showing the distribution of differences in methylation between [strain] and wild-type
+
 ```{r}
 compareMethylationMotifs <- function(genomicData1, genomicData2, strain1, strain2, 
                                      backgroundColor="black", coords ) {
@@ -310,8 +332,8 @@ compareMethylationMotifs(genomicData1= wt_Caulobacter, genomicData2= dalkb_Caulo
                          strain1= "wild-type", strain2= "∆alkB", coords= c(-0.15, 0.15))
 ```
 
+## Load R10.4.1 data for Brucella:
 
-# Load and modify Brucella R.10.4.1 data (note that the start of chromosome 1 is not at position 1 )
 ```{r}
 # Note that origin of Brucella chromosome 1, is not position at 1 in reference 
 
@@ -325,6 +347,11 @@ mucr_Brucella_chromosome1 <- read_rds("mucr_Brucella_chromosome1_clean.rds") %>%
 mucr_Brucella_chromosome2 <- read_rds("mucr_Brucella_chromosome2_clean.rds")
 ```
 
+## plotMethylationProbability:
+
+-   Plots probability of methylation across the genome of *Brucella* strains
+
+-    Used for the creation of [**Figure 3A**]{.underline}
 
 ```{r}
 plotMethylationProbability <- function(methylationData, genome_length, title, pointColor, lineColor){
@@ -390,11 +417,8 @@ plotMethylationProbability(ccrm_Brucella_chromosome2 , genome_length=1156948,
 
 ```
 
+## Reduce all Brucella methylation data in prep for MucR binding data
 
-
-
-
-# Prep for MUCR data
 ```{r}
 
 # Reload chromosome 1 data
@@ -423,12 +447,12 @@ brucellaMethylationDataCH2 <-reduceAllMethylationData(wt_Brucella_chromosome2,dl
               ccrm_Brucella_chromosome2,mucr_Brucella_chromosome2)
 ```
 
+## Load and prep MucR binding data
 
 ```{r}
 
-# Function that takes in 
+
 mucr_binding_information <- function(methylation_data, chromosome) {
-  # Filtering rows in mucR for the specified chromosome
   mucR_filtered <- mucR %>% filter(Chromosome == chromosome)
   setDT(methylation_data)
   setDT(mucR_filtered)
@@ -449,13 +473,13 @@ mucr_binding_information <- function(methylation_data, chromosome) {
 # Load MucR binding data
 mucR <- read.csv("../../../Downloads/mucRBinding.csv")
 
-# 
 brucellaMucrBindingDataCH1<- mucr_binding_information(methylation_data = brucellaMethylationDataCH1, chromosome = 1)
 brucellaMucrBindingDataCH2<- mucr_binding_information(methylation_data = brucellaMethylationDataCH2, chromosome = 2)
 ```
 
+## mucr_specific_histogram:
 
-
+-   Function that creates the histogram for [**Figure 4A.**]{.underline}
 
 ```{r}
 mucr_specific_histogram <- function( allBrucellaMethylationData = list(brucellaMethylationDataCH1, brucellaMethylationDataCH2), 
@@ -501,6 +525,8 @@ main_plot <-ggplot() +
 mucr_specific_histogram()
 
 ```
+
+## Creation of Figure 4B:
 
 ```{r fig.height=8, fig.width=8}
 library(dplyr)
@@ -609,6 +635,8 @@ data <- as.data.frame(prep_for_mucR_data())
 plot_hypomethylated_sites_in_relation_to_mucR(data)
 ```
 
+## Creation of Figure 4C: 
+
 ```{r fig.height=5, fig.width=4}
 # Combine and clean datasets for analysis
 combinedMethylationData <- do.call("rbind", list(
@@ -649,4 +677,3 @@ combinedMethylationData <- do.call("rbind", list(
 
 
 ```
-
