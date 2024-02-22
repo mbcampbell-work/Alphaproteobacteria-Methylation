@@ -1,0 +1,652 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+# Librarys 
+```{r setup, include=FALSE}
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(plotly)
+library(ggpubr)
+library(stringr)
+library(seqinr)
+library(DT)
+library(patchwork)
+library(gridExtra)
+library(scales)
+library(ggExtra)
+library(png)
+library(cowplot)
+library(magick)
+library(purrr)
+library(tidyr)
+library(nortest)
+
+```
+
+# Caulobacter data post-processing, available in /Data/ folder
+```{r}
+wt_Caulobacter <- read_rds("../../RData/Caulobacter_Data/wt_Caulobacter_clean.rds")
+dlon_Caulobacter <- read_rds("../../RData/Caulobacter_Data/dlon_Caulobacter_clean.rds")
+dalkb_Caulobacter <- read_rds("../../RData/Caulobacter_Data/dalkb_Caulobacter_clean.rds")
+```
+
+
+# plotMethylationProbability : Plot probability of methylation across the genome of Caulobacter strains used in Fig 1 C,D and Fig 2 A
+```{r}
+plotMethylationProbability <- function(methylationData, genome_length, title, pointColor, lineColor){
+  # Define default sizes for points and lines in the plot.
+  pointSize = 0.45
+  lineSize = 1.5
+  # Define the origins and terminus points for plotting.
+  origin_1 = 0
+  terminus = genome_length / 2  
+  origin_2 = genome_length
+  # Perform linear regression on methylation data, adjusting positions relative to the genome's midpoint.
+  Linear_Regression <- lm(methylationData$meanPoM ~ 
+                            ifelse(methylationData$Start >= terminus, 
+                                   genome_length - methylationData$Start,
+                                   methylationData$Start))
+  # Create the plot using ggplot2, starting with methylation data points.
+  methylationData %>%
+    ggplot(aes(Start, meanPoM)) +
+    geom_point(size = pointSize, alpha=0.35,  color=pointColor) +
+    # Add segments representing the linear regression line before and after the terminus.
+    geom_segment(aes(x = (terminus),
+                   y = Linear_Regression[["coefficients"]][["(Intercept)"]]+ 
+                       Linear_Regression[["coefficients"]][2]*(terminus), 
+                   xend = origin_2 , 
+                   yend = Linear_Regression[["coefficients"]][["(Intercept)"]]+ 
+                      Linear_Regression[["coefficients"]][2]*(origin_1)), linewidth = 1, color=lineColor)+
+  geom_segment(aes(x = terminus,
+                   y = Linear_Regression[["coefficients"]][["(Intercept)"]]+ 
+                      Linear_Regression[["coefficients"]][2]*(terminus),
+                   xend = origin_1 , 
+                   yend = Linear_Regression[["coefficients"]][["(Intercept)"]]+ 
+                          Linear_Regression[["coefficients"]][2]*origin_1), linewidth = 1, color=lineColor)+
+  # Set the plot title and theme.
+  ggtitle(title) +
+  theme_pubr() +
+  # Customize the x-axis to label origins and terminus.
+  scale_x_continuous(
+    labels = function(x) {
+      ifelse(x == origin_1,
+             "Origin",
+             ifelse(x == origin_2, 
+                    "Origin", 
+                    "Terminus"))},
+    expand = c(0, 0),
+    limits = c(origin_1 -100000 , origin_2 + 100000), 
+    breaks = c(origin_1, terminus, origin_2)
+  ) +
+  # Customize the y-axis for the probability of methylation.
+  scale_y_continuous(
+    expand = c(0, 0),
+    limits = c(-0.05, 1.05),
+    breaks = c(0.0, 0.5, 1.0)
+  ) +
+  # Remove x-label and adjust plot title and y-label styling.
+  xlab("") + theme(plot.title = element_text(hjust = 0.5))+
+  ylab("Probability of Methylation")  
+}
+
+plotMethylationProbability(methylationData= wt_Caulobacter, 
+                           genome_length= 4042929, 
+                           title ="Wild Type Caulobacter",
+                           pointColor= "black",
+                           lineColor="black")
+
+
+plotMethylationProbability(methylationData= dlon_Caulobacter, 
+                           genome_length= 4042929, 
+                           title ="∆lon Caulobacter",
+                           pointColor= "#619CFF",
+                           lineColor="#619CFF")
+
+
+plotMethylationProbability(methylationData= dalkb_Caulobacter, 
+                           genome_length= 4042929, 
+                           title ="∆alkB Caulobacter",
+                           pointColor= "#e1beef",
+                           lineColor="#e1beef")
+```
+
+# pairGenomicSites : Groups GANTC motifs into sites (within 2 bps and on opposite strands)
+```{r}
+pairGenomicSites <- function(genomicData) {
+  genomicData %>%
+    dplyr::group_by(pairGroup = (dplyr::row_number() - 1) %/% 2) %>%
+    dplyr::summarise(StartPos1 = dplyr::first(Start),
+                     StartPos2 = dplyr::nth(Start, 2),
+                     Start = mean(c(dplyr::first(Start), dplyr::nth(Start, 2)), na.rm = TRUE),
+                     DistanceToTSS1 = dplyr::first(`Distane To Nearest Transcription Start Site`),
+                     DistanceToTSS2 = dplyr::nth(`Distane To Nearest Transcription Start Site`, 2),
+                     FeatureID1 = dplyr::first(`Feature Identifier`),
+                     FeatureID2 = dplyr::nth(`Feature Identifier`, 2),
+                     GeneDescription1 = dplyr::first(`Feature Description`),
+                     GeneDescription2 = dplyr::nth(`Feature Description`, 2),
+                     MethylationProb1 = dplyr::first(meanPoM),
+                     MethylationProb2 = dplyr::nth(meanPoM, 2),
+                     .groups = "drop") %>%
+    dplyr::mutate(MethylationStatus = ifelse(MethylationProb1 >= 0.50 & MethylationProb2 >= 0.50, "Methylated",
+                                             ifelse(MethylationProb1 < 0.50 & MethylationProb2 < 0.50, "Unmethylated", "Hemi"))) %>%
+    dplyr::select(-pairGroup)
+}
+```
+
+
+```{r}
+compareMethylationDifferences <- function(genomicData1, genomicData2, strain_1, strain_2, exclude_deleted_gene= NULL) {
+  pairedData1 <- pairGenomicSites(genomicData1)
+  pairedData2 <- pairGenomicSites(genomicData2)
+  
+  mergedData <- rbind(merge(pairedData1, pairedData2, 
+          by = c("StartPos1", "DistanceToTSS1", "DistanceToTSS2", "GeneDescription1", "GeneDescription2")) %>%
+                select(Start=StartPos1, DistanceToTSS1, DistanceToTSS2, GeneDescription1, GeneDescription2, MethylationProbWT= MethylationProb1.x, MethylationProbDALKB= MethylationProb1.y),
+          merge(pairedData1, pairedData2, 
+          by = c("StartPos2", "DistanceToTSS1", "DistanceToTSS2", "GeneDescription1", "GeneDescription2")) %>%
+                select(Start=StartPos2, DistanceToTSS1, DistanceToTSS2, GeneDescription1, GeneDescription2, MethylationProbWT= MethylationProb2.x, MethylationProbDALKB=MethylationProb2.y))
+  
+  if (! is.null(exclude_deleted_gene)){
+  exclusionRangeStart <- exclude_deleted_gene[1]
+  exclusionRangeEnd <- exclude_deleted_gene[2]
+  mergedData <- mergedData %>%
+    dplyr::filter(!(Start > exclusionRangeStart & Start < exclusionRangeEnd))
+  }
+  
+  mergedData$Difference <- mergedData$MethylationProbDALKB - mergedData$MethylationProbWT
+  meanDiff <- mean(mergedData$Difference)
+  sdDiff <- sd(mergedData$Difference)
+  zScoreThresholdMin <- meanDiff - (2.5 * sdDiff)
+  zScoreThresholdMax <- meanDiff + (2.5 * sdDiff)
+  
+  mergedData$Color <- dplyr::case_when(
+    (mergedData$Difference < zScoreThresholdMin | mergedData$Difference > zScoreThresholdMax) &
+    ((mergedData$DistanceToTSS1 > -300 & mergedData$DistanceToTSS1 != 0) | (mergedData$DistanceToTSS2 > -300 & mergedData$DistanceToTSS2 != 0)) ~ "Significant Genic/Intergenic",
+    TRUE ~ "Not Significant"
+  )
+  
+  
+    mergedData <- mergedData[ ((mergedData$DistanceToTSS1>-300 & mergedData$DistanceToTSS1!=0 &
+                                    mergedData$DistanceToTSS2!=0)| 
+                                   (mergedData$DistanceToTSS2>-300 & mergedData$DistanceToTSS2!=0 & 
+                                      mergedData$DistanceToTSS1!=0)),]
+  
+    
+  # Plotting
+  ggplot(mergedData, aes(x = MethylationProbWT, y = MethylationProbDALKB, color = Color)) +
+    geom_point(aes(size = Color , alpha = Color)) +
+    scale_color_manual(values = c("Significant Genic/Intergenic" = "red", "Not Significant" = "black")) +
+    scale_alpha_manual(values = c("Significant Genic/Intergenic" = 0.75, "Not Significant" = 0.3)) +
+    scale_size_manual(values = c("Significant Genic/Intergenic" = 2, "Not Significant" = 1)) +
+    theme_pubr() +
+    scale_y_continuous(expand = c(0, 0), limits = c(0.1, .9), breaks = seq(0, 1, by = 0.25)) +
+    scale_x_continuous(expand = c(0, 0), limits = c(0.1, .9), breaks = seq(0, 1, by = 0.25)) +
+    geom_abline(intercept = 0, slope = 1, color = "black", size = 1, alpha = 0.75, linetype = "dashed") +
+    xlab(paste0("Probability of Methylation in ", strain_1)) +
+    ylab(paste0("Probability of Methylation in ", strain_2)) +
+    guides(color = guide_legend(title = "Change in Methylation Probability"), size = FALSE)
+
+}
+
+compareMethylationDifferences(wt_Caulobacter, dalkb_Caulobacter, 
+                              strain_1= "Wild Type", strain_2= "∆alkB",
+                              exclude_deleted_gene = c(7170, 7790))
+
+# Calculate the correlation between wt and calobacter 
+
+compareMotifs<- function(methylationData1, methylationData2, poretype="R9.5"){
+  
+  data <- merge(methylationData1, methylationData2, by="Start") %>% mutate(difference_in_methylation = meanPoM.y - meanPoM.x) 
+  print(paste0("Correlation between methylation :",cor(data$meanPoM.x, data$meanPoM.y)))
+  print(paste0("Mean difference between methylation: ", mean(data$difference_in_methylation)))
+  print(paste0("STD between methylation: ", sd(data$difference_in_methylation)))
+  
+  print(paste0("Outliers: +/-", mean(data$difference_in_methylation) + 2.5*sd(data$difference_in_methylation)))
+  print( ad.test( data %>%
+                  select(difference_in_methylation) %>%
+                  pull(difference_in_methylation) ) )
+}
+compareMotifs(wt_Caulobacter, dalkb_Caulobacter, poretype="R9.5")
+```
+```{r fig.height=5, fig.width=5}
+compareMethylationAndTranscriptionalDifferences <- function( genomicData1, genomicData2,transcriptional_data,
+                                                             genome_reference, exclude_deleted_gene=NULL){
+
+
+    mergedMethylationData <- merge(pairGenomicSites(genomicData1), pairGenomicSites(genomicData2), 
+                        by = c("Start","StartPos1", "StartPos2",
+                               "DistanceToTSS1", "DistanceToTSS2", "FeatureID1", 
+                               "FeatureID2", "GeneDescription1", "GeneDescription2"))
+
+    indexedTranscriptionalData <- merge(transcriptional_data %>% mutate(new_locus=locus_tag),
+                      genome_reference %>% mutate(new_locus=Locus.tag)) %>% 
+                      dplyr::select (new_locus, logFC, PValue, Protein.product)
+  
+    combinedData <- merge(mergedMethylationData, indexedTranscriptionalData %>% 
+                      dplyr::rename(FeatureID1= Protein.product), by="FeatureID1") 
+  
+    combinedData <- merge(combinedData, indexedTranscriptionalData %>% 
+                      dplyr::rename(FeatureID2= Protein.product), by="FeatureID2") 
+
+   combinedDataMotifs <- rbind(
+      combinedData %>%
+        select(-`MethylationProb2.x`, -`MethylationProb2.y`) %>%
+        rename(MethylationProbDALKB = MethylationProb1.y, MethylationProbWT = MethylationProb1.x) %>%
+        filter((DistanceToTSS1 > -300 & DistanceToTSS1 != 0 & DistanceToTSS2 != 0) | 
+               (DistanceToTSS2 > -300 & DistanceToTSS2 != 0 & DistanceToTSS1 != 0)) %>%
+        mutate(Difference = MethylationProbDALKB - MethylationProbWT),
+      combinedData %>%
+        select(-`MethylationProb1.x`, -`MethylationProb1.y`) %>%
+        rename(MethylationProbDALKB = MethylationProb2.y, MethylationProbWT = MethylationProb2.x) %>%
+        filter((DistanceToTSS1 > -300 & DistanceToTSS1 != 0 & DistanceToTSS2 != 0) | 
+               (DistanceToTSS2 > -300 & DistanceToTSS2 != 0 & DistanceToTSS1 != 0)) %>%
+        mutate(Difference = MethylationProbDALKB - MethylationProbWT))
+
+    model <- lm(MethylationProbDALKB ~ MethylationProbWT, data = combinedDataMotifs)
+
+    std_dev <- sd(resid(model))
+    slope <- coef(model)["MethylationProbWT"]
+    intercept <- coef(model)["(Intercept)"]
+    
+    significantPoints <- combinedDataMotifs %>%
+        filter((PValue.x < 0.005 | PValue.y < 0.005) &
+         (intercept + 2.5 * std_dev) + slope * MethylationProbWT < MethylationProbDALKB)
+    
+    plot <- ggplot() +
+              geom_point(data = combinedDataMotifs,
+                 aes(x = MethylationProbWT, y = MethylationProbDALKB),
+                     color = "black",
+                     alpha = 0.2, size = 1) +
+              geom_point(data = significantPoints,
+                 aes(x = MethylationProbWT, y = MethylationProbDALKB),
+                     color = "red",   
+                     alpha = 1, size = 3, shape = 16) +
+              geom_abline(intercept = 0, slope = 1,
+                 color = "black", size = 2, alpha = 0.75, linetype = "dashed") +
+              scale_y_continuous(expand = c(0, 0), limits = c(0.1, 0.9), breaks = seq(0, 1, by = 0.25)) +
+              scale_x_continuous(expand = c(0, 0), limits = c(0.1, 0.9), breaks = seq(0, 1, by = 0.25)) +
+              labs(x = "Probability of Methylation in Wild Type",
+                   y = "Probability of Methylation in ∆lon",
+                   color = "Gene Expression Change") +
+              scale_color_identity() + 
+              theme_pubr() +
+              theme(legend.position = "none")  
+    plot
+
+}
+
+compareMethylationAndTranscriptionalDifferences( genomicData1= wt_Caulobacter, genomicData2=dlon_Caulobacter,
+                                                 transcriptional_data= load("../../RData/Caulobacter_Data/caulobacter_rna_seq.rds"), genome_reference= read.csv("../../RData/Caulobacter_Data/caulobacter_reference.csv"))
+```
+
+
+# compareMethylationMotifs: Creates a histogram of comparing GANTC motif difference between two strains (R.9.5 data)
+```{r}
+compareMethylationMotifs <- function(genomicData1, genomicData2, strain1, strain2, 
+                                     backgroundColor="black", coords ) {
+    df <- merge(genomicData1, genomicData2, by="Start")
+    ggplot(data = df) +
+        geom_bar(aes(x = meanPoM.y - meanPoM.x, fill = paste0(strain2, " vs ", strain1)), 
+                 color = "black", stat = "bin", width = 0.7, alpha = 0.25, bins = 60) +
+        xlab("Methylation Difference") + ylab("# of GANTC motifs") +
+        coord_cartesian(xlim = c(coords[1], coords[2])) +  
+        geom_vline(xintercept = 0, size = 0.5, linetype = "dashed") +
+        geom_vline(xintercept = mean(df$meanPoM.y - df$meanPoM.x), 
+                   size = 0.5, linetype = "solid", color = "red") +
+        scale_fill_manual(name = 'Comparison',
+                          values = setNames(list(backgroundColor), paste0(strain2, " vs ", strain1))) +
+        theme_pubr() + 
+        ggtitle(paste0("Difference between all \n", strain2, " and ", strain1, " motifs")) +
+        theme(legend.position = "none", text = element_text(size = 12),
+              plot.title = element_text(hjust = 0.5),
+              plot.margin = margin(t = 0, r = 0, b = 0, l = 0))
+}
+compareMethylationMotifs(genomicData1= wt_Caulobacter, genomicData2= dlon_Caulobacter,
+                         strain1= "wild-type", strain2= "∆lon", coords= c(-0.10, 0.25))
+compareMethylationMotifs(genomicData1= wt_Caulobacter, genomicData2= dalkb_Caulobacter,
+                         strain1= "wild-type", strain2= "∆alkB", coords= c(-0.15, 0.15))
+```
+
+
+# Load and modify Brucella R.10.4.1 data (note that the start of chromosome 1 is not at position 1 )
+```{r}
+# Note that origin of Brucella chromosome 1, is not position at 1 in reference 
+
+wt_Brucella_chromosome1 <-  read_rds("wt_Brucella_chromosome1_clean.rds") %>% mutate(V2= ifelse(V2 > (2006612), V2 -2006612, V2 + abs(2121359-2006612)))
+wt_Brucella_chromosome2 <- read_rds("wt_Brucella_chromosome2_clean.rds")
+dlon_Brucella_chromosome1 <- read_rds("dlon_Brucella_chromosome1_clean.rds") %>% mutate(V2= ifelse(V2 > (2006612), V2 -2006612, V2 + abs(2121359-2006612)))
+dlon_Brucella_chromosome2 <- read_rds("dlon_Brucella_chromosome2_clean.rds")
+ccrm_Brucella_chromosome1 <- read_rds("ccrm_Brucella_chromosome1_clean.rds") %>%  mutate(V2= ifelse(V2 > (2006612), V2 -2006612, V2 + abs(2121359-2006612)))
+ccrm_Brucella_chromosome2 <- read_rds("ccrm_Brucella_chromosome2_clean.rds")
+mucr_Brucella_chromosome1 <- read_rds("mucr_Brucella_chromosome1_clean.rds") %>% mutate(V2= ifelse(V2 > (2006612), V2 -2006612, V2 + abs(2121359-2006612)))
+mucr_Brucella_chromosome2 <- read_rds("mucr_Brucella_chromosome2_clean.rds")
+```
+
+
+```{r}
+plotMethylationProbability <- function(methylationData, genome_length, title, pointColor, lineColor){
+  origin_1 = 0
+  terminus = genome_length / 2  
+  origin_2 = genome_length
+  Linear_Regression <- lm(methylationData$V11/100 ~ 
+                            ifelse(methylationData$V2 >= terminus, 
+                                   genome_length - methylationData$V2,
+                                   methylationData$V2))
+  methylationData %>%
+    ggplot(aes(V2, V11/100)) +
+    geom_point(size = 1.2, alpha=0.35,  color=pointColor) +
+    geom_segment(aes(x = (terminus),
+                   y = Linear_Regression[["coefficients"]][["(Intercept)"]]+ 
+                       Linear_Regression[["coefficients"]][2]*(terminus), 
+                   xend = origin_2 , 
+                   yend = Linear_Regression[["coefficients"]][["(Intercept)"]]+ 
+                      Linear_Regression[["coefficients"]][2]*(origin_1)), size = 2, color=lineColor)+
+  geom_segment(aes(x = terminus,
+                   y = Linear_Regression[["coefficients"]][["(Intercept)"]]+ 
+                      Linear_Regression[["coefficients"]][2]*(terminus),
+                   xend = origin_1 , 
+                   yend = Linear_Regression[["coefficients"]][["(Intercept)"]]+ 
+                          Linear_Regression[["coefficients"]][2]*origin_1), size = 2, color=lineColor)+
+  ggtitle(title) +
+  theme_pubr() +
+  scale_x_continuous(
+    labels = function(x) {
+      ifelse(x == origin_1,
+             "Origin",
+             ifelse(x == origin_2, 
+                    "Origin", 
+                    "Terminus"))},
+    expand = c(0, 0),
+    limits = c(origin_1 -100000 , origin_2 + 100000), 
+    breaks = c(origin_1, terminus, origin_2)
+  ) +
+  scale_y_continuous(
+    expand = c(0, 0),
+    limits = c(-0.05, 1.05),
+    breaks = c(0.0, 0.5, 1.0)
+  ) +
+  xlab("") + theme(plot.title = element_text(hjust = 0.5))+
+  ylab("Probability of Methylation")  
+}
+
+
+plotMethylationProbability(wt_Brucella_chromosome1, genome_length=2121359, 
+                           title= "Chromosome 1: Wild Type",  pointColor= "black", lineColor="black")
+plotMethylationProbability(dlon_Brucella_chromosome1, genome_length=2121359,
+                            title= "Chromosome 1: ∆lon", pointColor= "#619CFF",lineColor="#619CFF")
+plotMethylationProbability(ccrm_Brucella_chromosome1,genome_length=2121359, 
+                           title= "Chromosome 1: ccrM o/e", pointColor= "#00BA38",lineColor="#00952d")
+
+
+plotMethylationProbability(wt_Brucella_chromosome2 , genome_length=1156948, 
+                           title= "Chromosome 2: Wild Type", pointColor="black",lineColor="black")
+plotMethylationProbability(dlon_Brucella_chromosome2, genome_length=1156948, 
+                           title= "Chromosome 2: ∆lon", pointColor= "#619CFF",lineColor="#619CFF")
+plotMethylationProbability(ccrm_Brucella_chromosome2 , genome_length=1156948,
+                            title= "Chromosome 2: ccrM o/e", pointColor= "#00BA38", lineColor = "#00952d")
+
+```
+
+
+
+
+
+# Prep for MUCR data
+```{r}
+
+# Reload chromosome 1 data
+wt_Brucella_chromosome1 <-  read_rds("wt_Brucella_chromosome1_clean.rds")
+dlon_Brucella_chromosome1 <- read_rds("dlon_Brucella_chromosome1_clean.rds") 
+ccrm_Brucella_chromosome1 <- read_rds("ccrm_Brucella_chromosome1_clean.rds") 
+mucr_Brucella_chromosome1 <- read_rds("mucr_Brucella_chromosome1_clean.rds") 
+
+
+# Function to merge and reduce methylation data 
+reduceAllMethylationData <- function(wildType, deltaLon, ccrmOE, deltaMucr){
+  wildType<- wildType[, c(2, 1, 11)] %>% dplyr::rename(Position = V2, Chromosome = V1, PoM.wt = V11)
+  deltaLon<- deltaLon[, c(2, 1, 11)] %>% dplyr::rename(Position = V2, Chromosome = V1, PoM.dlon = V11)
+  ccrmOE<- ccrmOE[, c(2, 1, 11)] %>% dplyr::rename(Position = V2, Chromosome = V1, PoM.ccrm = V11)
+  deltaMucr<- deltaMucr[, c(2, 1, 11)] %>% dplyr::rename(Position = V2, Chromosome = V1, PoM.mucr = V11)
+  
+  purrr::reduce(list(wildType, deltaLon, ccrmOE, deltaMucr), ~ merge(.x, .y, by = c("Position", "Chromosome"))) %>%
+  filter(complete.cases(.))
+  
+  }
+
+brucellaMethylationDataCH1 <- reduceAllMethylationData(wt_Brucella_chromosome1,dlon_Brucella_chromosome1, 
+              ccrm_Brucella_chromosome1,mucr_Brucella_chromosome1)
+
+brucellaMethylationDataCH2 <-reduceAllMethylationData(wt_Brucella_chromosome2,dlon_Brucella_chromosome2, 
+              ccrm_Brucella_chromosome2,mucr_Brucella_chromosome2)
+```
+
+
+```{r}
+
+# Function that takes in 
+mucr_binding_information <- function(methylation_data, chromosome) {
+  # Filtering rows in mucR for the specified chromosome
+  mucR_filtered <- mucR %>% filter(Chromosome == chromosome)
+  setDT(methylation_data)
+  setDT(mucR_filtered)
+  joined_data <- methylation_data[mucR_filtered, on = .(Position >= Start, Position <= Stop), nomatch = 0]
+  
+  colnames(joined_data)
+   joined_data <- joined_data %>%
+     mutate(DifferenceBetweenMucrAndWt = (PoM.mucr - PoM.wt) /100,
+            DifferenceBetweenMucrAndCcrmOE = (PoM.mucr - PoM.ccrm)/100) %>%
+     rename(mucrBindingStart = Position, mucrBindingStop = Position.1)
+  
+   joined_data <- merge(joined_data, methylation_data, by=c("PoM.wt", "PoM.ccrm", "PoM.mucr", "PoM.dlon"))
+   
+  return(setDT(joined_data))
+}
+
+
+# Load MucR binding data
+mucR <- read.csv("../../../Downloads/mucRBinding.csv")
+
+# 
+brucellaMucrBindingDataCH1<- mucr_binding_information(methylation_data = brucellaMethylationDataCH1, chromosome = 1)
+brucellaMucrBindingDataCH2<- mucr_binding_information(methylation_data = brucellaMethylationDataCH2, chromosome = 2)
+```
+
+
+
+
+```{r}
+mucr_specific_histogram <- function( allBrucellaMethylationData = list(brucellaMethylationDataCH1, brucellaMethylationDataCH2), 
+    allMucrBindingData = list(brucellaMucrBindingDataCH1, brucellaMucrBindingDataCH2)){
+    
+    all <- as.data.frame(do.call("rbind",allBrucellaMethylationData))
+    mucr <- as.data.frame(do.call("rbind",allMucrBindingData))
+    
+main_plot <-ggplot() +
+  geom_bar(
+    data = mucr, 
+    aes(x = DifferenceBetweenMucrAndWt, fill = "a"), 
+    stat = "bin", 
+    width = 0.2, 
+    alpha = 0.5, 
+    bins = 48, 
+    color = "black"
+  ) +
+  geom_density(
+    data = all, 
+    aes(x = (PoM.mucr - PoM.wt) / 100, y = ..density.. * (1080 / 48), fill = "b"), 
+    alpha = 0.2
+  ) +
+  
+  scale_y_continuous(limits = c(0, 125), breaks = seq(0, 120, by = 20)) +
+  scale_fill_manual(
+    values = c("b" = "grey", "a" = "black"),
+    name="",
+    labels = c("GANTC overlaping mucR binding site", "All data")
+  ) +
+  xlab("Difference in probability of methylation (∆mucR vs. wild type)") +
+  ylab("# of GANTC motifs") +theme_pubr()+
+  theme(
+    text = element_text(size = 15),
+    legend.position = c(0.8,0.9),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+    legend.text = element_text(size = rel(0.6)),
+    legend.text.align = 0.1
+  ) 
+  main_plot
+}
+
+mucr_specific_histogram()
+
+```
+
+```{r fig.height=8, fig.width=8}
+library(dplyr)
+library(ggplot2)
+library(ggpubr)
+pair_motifs <- function(data){
+  data %>%
+    group_by(group = (row_number() - 1) %/% 2) %>%
+    summarise(Start1 = dplyr::first(V2),
+              Start2 = dplyr::nth(V2, 2),
+              Start = mean(c(dplyr::first(V2), dplyr::nth(V2, 2)), na.rm = TRUE),
+              PoM1 = dplyr::first(V11),
+              PoM2 = dplyr::nth(V11, 2),
+              .groups = "drop") %>%
+    mutate(Status = ifelse(PoM1 >= 60 & PoM2 >= 60, "Methylated",
+                           ifelse(PoM1 < 60 & PoM2 < 60, "Unmethylated", "Hemi")))%>%
+  dplyr::select(-group)
+}
+
+  
+prep_for_mucR_data <- function(){
+  return(
+  rbind(
+        merge(pair_motifs(wt_Brucella_chromosome1), 
+              pair_motifs(mucr_Brucella_chromosome1),
+              by=c('Start', 'Start1',"Start2")) %>%
+                  rename_with(~ str_replace(., "\\.x$", ".wt"), ends_with(".x")) %>%
+                  rename_with(~ str_replace(., "\\.y$", ".mucr"), ends_with(".y")) %>%
+                      mutate(Chromosome=1, 
+                             overlapsMUCR = sapply(Start1, function(x) x %in% brucellaMucrBindingDataCH1$Position)| 
+                                            sapply(Start2, function(x) x %in% brucellaMucrBindingDataCH1$Position),
+                            methylationDifference.x= PoM1.mucr- PoM1.wt, 
+                            methylationDifference.y= PoM2.mucr- PoM2.wt,  
+                            wtSiteMethylation = mapply(function(x, y) mean(c(x, y)), PoM1.wt, PoM2.wt),
+                            mucrSiteMethylation = mapply(function(x, y) mean(c(x, y)), PoM1.mucr, PoM2.mucr)) , 
+        merge(pair_motifs(wt_Brucella_chromosome2), 
+              pair_motifs(mucr_Brucella_chromosome2),
+              by=c('Start', 'Start1',"Start2")) %>%
+                  rename_with(~ str_replace(., "\\.x$", ".wt"), ends_with(".x")) %>%
+                  rename_with(~ str_replace(., "\\.y$", ".mucr"), ends_with(".y")) %>%
+                        mutate(Chromosome=2, 
+                             overlapsMUCR = sapply(Start1, function(x) x %in% brucellaMucrBindingDataCH2$Position)| 
+                                            sapply(Start2, function(x) x %in% brucellaMucrBindingDataCH2$Position),
+                            methylationDifference.x= PoM1.mucr- PoM1.wt, 
+                            methylationDifference.y= PoM2.mucr- PoM2.wt,
+                            wtSiteMethylation = mapply(function(x, y) mean(c(x, y)), PoM1.wt, PoM2.wt),
+                            mucrSiteMethylation = mapply(function(x, y) mean(c(x, y)), PoM1.mucr, PoM2.mucr)))
+  )
+}
+
+plot_hypomethylated_sites_in_relation_to_mucR <- function(data){
+
+ggplot() +
+  geom_point(
+    data = data[data$wtSiteMethylation < 33,],
+    aes(
+      x = wtSiteMethylation / 100,
+      y = mucrSiteMethylation / 100,
+      color = ifelse(overlapsMUCR, "a", "b"),
+      alpha = ifelse(overlapsMUCR, 0.9, 0.75)
+    ),
+    size = 2 
+  ) +
+  geom_point(
+    data = data[!data$wtSiteMethylation < 33,],
+    color = "black",
+    aes(alpha = 0.4, 
+        x = wtSiteMethylation / 100,
+        y = mucrSiteMethylation / 100),
+    size = 0.5
+  ) +
+   scale_alpha_identity()+
+  xlab("Probability of methylation of wild-type sites") + 
+  ylab("Probability of methylation of ∆mucR sites") +
+  scale_x_continuous(limits = c(0, 1.0), breaks = seq(0, 1, by = 0.1)) +
+  scale_y_continuous(limits = c(0, 1.0), breaks = seq(0, 1, by = 0.1)) +
+  geom_abline(
+    intercept = 0, 
+    slope = 1, 
+    color = "black", 
+    size = 0.75, 
+    alpha = 0.7, 
+    linetype = "dashed"
+  ) +
+  theme_pubr() +
+  scale_color_manual(
+    values = c("b" = "#F8766D", "a" = "green"),
+    name = "Hypomethylated Sites in Wild Type",
+    labels = c("Overlaps mucR binding site", "Does not overlap mucR binding site")
+  ) +
+  guides(
+    alpha = FALSE  # Hide alpha legend
+  ) +
+  theme(
+    legend.position = c(0.7, 0.1),
+    legend.box.background = element_rect(color = "black", size = 1),
+    legend.text = element_text(size = rel(1.2)),
+    legend.title = element_text(size = rel(1.4)),
+    legend.title.align = 0.4
+  )
+ # Adjust legend position as needed
+}
+
+
+data <- as.data.frame(prep_for_mucR_data())
+plot_hypomethylated_sites_in_relation_to_mucR(data)
+```
+
+```{r fig.height=5, fig.width=4}
+# Combine and clean datasets for analysis
+combinedMethylationData <- do.call("rbind", list(
+  # Subset data with low site methylation and select relevant columns
+  data %>% 
+    filter(wtSiteMethylation < 33) %>%
+    select(Position = Start, PoM.wt = PoM1.wt, PoM.mucr = PoM1.mucr, overlapsMUCR) %>%
+    mutate(overlapsMUCR = ifelse(overlapsMUCR, "Overlaps", "Doesn't overlap")),
+  data %>% 
+    filter(wtSiteMethylation < 33) %>%
+    select(Position = Start, PoM.wt = PoM2.wt, PoM.mucr = PoM2.mucr, overlapsMUCR) %>%
+    mutate(overlapsMUCR = ifelse(overlapsMUCR, "Overlaps", "Doesn't overlap")),
+  
+  # Combine additional methylation datasets with a new category
+  brucellaMethylationDataCH1 %>% 
+    select(Position, PoM.wt, PoM.mucr) %>%
+    mutate(overlapsMUCR = "All data"),
+  brucellaMethylationDataCH2 %>% 
+    select(Position, PoM.wt, PoM.mucr) %>%
+    mutate(overlapsMUCR = "All data")
+))
+
+# Plotting the combined data
+ ggplot(combinedMethylationData, aes(x = overlapsMUCR, y = (PoM.mucr - PoM.wt) / 100, fill = overlapsMUCR)) +
+  geom_boxplot(outlier.size = 0.9, width = 0.7) +
+  geom_signif(comparisons = list(c("Overlaps", "Doesn't overlap")), y_position = 0.8, tip_length = 0.05, vjust = 0.1) +
+  geom_signif(comparisons = list(c("All data", "Doesn't overlap")), y_position = 0.7, tip_length = 0.05, vjust = 0.1) +
+  geom_signif(comparisons = list(c("All data", "Overlaps")), y_position = 0.9, tip_length = 0.05, vjust = 0.1) +
+  scale_x_discrete(limits = c("Overlaps", "Doesn't overlap", "All data")) +
+  ylab("Change in Probability of Methylation (∆mucR vs. Wild Type)") + xlab("")+
+  theme_pubr() +
+  scale_fill_manual(values = c("Overlaps" = "green", "All data" = "grey", "Doesn't overlap" = "#F8766D")) +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 0)) +
+  geom_segment(aes(x = "Overlaps", xend = "Doesn't overlap", y = -0.2, yend = -0.2), size = 0.8) +
+  geom_segment(aes(x = "Overlaps", xend = "Overlaps", y = -0.201, yend = -0.15), size = 0.8) +
+  geom_segment(aes(x = "Doesn't overlap", xend = "Doesn't overlap", y = -0.201, yend = -0.15), size = 0.8)
+
+
+
+```
+

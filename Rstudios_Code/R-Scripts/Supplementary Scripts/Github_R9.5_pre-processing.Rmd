@@ -1,0 +1,84 @@
+---
+title: "R9.5 additional processing"
+output: html_document
+date: "2024-02-13"
+---
+
+# Prep for R9.5 Data in relation to GANTC motif:
+A issue among all R9.5 datasets was the miss call of GA(A)TC (Middle adenine was called as methylated) as no known methyltransferase is capable of methylated the middle A we assumed this data to be wrong influenctial on the calls of G(A)ATC. This script, process the raw R9.5 data to remove the miscalls and accounts for the influence that GA(A)TC may be exerting. 
+```{r}
+# Set working directory to location of post batch script data for R.9.5 data
+setwd("..")
+
+wt_Caulobacter<-read_csv("Data/WTMethylationCalls.xlsx - WT Methylation Calls.csv")%>%
+     dplyr::rename(PoM= `Probability of Methylation`, 
+          Kmer= `Kmer (M indicates methylated A base)`,
+          iPoM=`Probability of Methylation on Each Individual Read`)
+
+dlon_Caulobacter <- read_csv("Data/DLON_methylation_calls.xlsx - DLON Methylation Calls.csv") %>%
+    dplyr::rename(PoM= `Probability of Methylation`,
+           Kmer= `Kmer (M indicates methylated A base)`,
+           iPoM=`Probability of Methylation on Each Individual Read`)
+
+dalkb_Caulobacter <- read_csv("Data/DALKB Methylation Calls.xlsx - DALKB Methylation Calls.csv") %>%
+    dplyr::rename(PoM= `Probability of Methylation`,
+           Kmer= `Kmer (M indicates methylated A base)`,
+           iPoM=`Probability of Methylation on Each Individual Read`)
+
+processMethylationData <- function(dataset, kmerPattern1, kmerPattern2) {
+  
+  for (i in 1:length(dataset$iPoM)){
+    dataset$meanPoM[i] <- mean(as.numeric(unlist(strsplit(dataset$iPoM[i],","))))
+  }
+  
+  datasetFilteredPattern1 <- dataset %>% filter(grepl(kmerPattern1, dataset$Kmer))
+  datasetFilteredPattern2 <- dataset %>% filter(grepl(kmerPattern2, dataset$Kmer))
+  
+  updatePoMValuesBasedOnComparison <- function(primaryDataset, comparisonDataset) {
+    for (i in 1:nrow(primaryDataset)) {
+      nearbyRows <- comparisonDataset[comparisonDataset$Start %in% (primaryDataset$Start[i] + -1:1), ]
+      if (nrow(nearbyRows) > 0 && primaryDataset$meanPoM[i] < nearbyRows$meanPoM[1]) {
+        primaryDataset$meanPoM[i] <- nearbyRows$meanPoM[1]
+      }
+    }
+    return(primaryDataset)
+  }
+  
+  datasetWithUpdatedPoM <- updatePoMValuesBasedOnComparison(datasetFilteredPattern1, datasetFilteredPattern2)
+  for (i in 1:length(dataset$Start)) {
+    if (dataset$Start[i] %in% datasetWithUpdatedPoM$Start) {
+      dataset$meanPoM[i] <- datasetWithUpdatedPoM[datasetWithUpdatedPoM$Start %in% dataset$Start[i], ]$meanPoM
+    }
+  }
+
+  cleanDataset <- function(dataset) {
+    toRemoveIndices <- c()
+    
+    for (i in 1:length(dataset$Start)) {
+      if (!((dataset$Start[i] + 2) %in% dataset$Start) && !((dataset$Start[i] - 2) %in% dataset$Start)) {
+        toRemoveIndices <- append(toRemoveIndices, i)
+      }
+    }
+    toRemoveIndices <- unique(append(toRemoveIndices, which(duplicated(dataset$Start))))
+    dataset <- dataset[-toRemoveIndices, ]
+    rownames(dataset) <- NULL
+    return(dataset)
+  }
+  
+  finalProcessedData <- cleanDataset(dataset)
+  return(finalProcessedData)
+}
+
+wt_Caulobacter <- processMethylationData(wt_Caulobacter,
+                                         "\\b[A,T,C,G]{4}GMMTC[A,T,C,G]{2}\\b",
+                                         "\\b[A,T,C,G]{3}GMMTC[A,T,C,G]{3}\\b") 
+
+dlon_Caulobacter <- processMethylationData(dlon_Caulobacter,
+                                           "\\b[A,T,C,G]{4}GMMTC[A,T,C,G]{2}\\b",
+                                           "\\b[A,T,C,G]{3}GMMTC[A,T,C,G]{3}\\b") 
+
+dalkb_Caulobacter <- processMethylationData(dalkb_Caulobacter,
+                                            "\\b[A,T,C,G]{4}GMMTC[A,T,C,G]{2}\\b",
+                                            "\\b[A,T,C,G]{3}GMMTC[A,T,C,G]{3}\\b") 
+
+```
