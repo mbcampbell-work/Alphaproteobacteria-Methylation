@@ -1,0 +1,396 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r setup, include=FALSE}
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(plotly)
+library(ggpubr)
+library(stringr)
+library(seqinr)
+library(DT)
+library(patchwork)
+library(gridExtra)
+library(scales)
+library(ggExtra)
+library(png)
+library(cowplot)
+library(magick)
+library(purrr)
+library(tidyr)
+library(nortest)
+
+```
+
+# Function to form Supplementary figure 1 data, note that it is intensive on memory. 
+# Sections of genome in x bp chunks and calculates the average Porbability of methylation and IPDratio and 
+# Product of this chunk available in Data/nanoVsSmrtCorrelations.RData
+```{r}
+# Load SMRT data and rename column
+smrtData <- readRDS("smrt.rds") %>% dplyr::rename(Start = "tpl")
+
+# Load Nanopore data 
+wt_Caulobacter <- read_rds("wt_Caulobacter_clean.rds")
+
+# Adjust Start values and merge datasets
+wt_Caulobacter$Start <- wt_Caulobacter$Start + 1
+nanoVsSmrtMerged <- merge(smrtData, wt_Caulobacter, by = "Start")
+wt_Caulobacter$Start <- wt_Caulobacter$Start - 1
+
+# Function to calculate rolling means
+calculateRollingMeans <- function(data, start = 0, max = 4e6, range = 30e3, overlap = range / 2) {
+  results <- list(Start = numeric(), Mid = numeric(), End = numeric(), PoM = numeric(), IPD = numeric())
+  
+  while ((start + range) < max) {
+    end <- start + range
+    subset <- data %>% filter(Start >= start & Start <= end)
+    results$Start <- c(results$Start, start)
+    results$Mid <- c(results$Mid, (start + end) / 2)
+    results$End <- c(results$End, end)
+    results$PoM <- c(results$PoM, mean(subset$meanPoM, na.rm = TRUE))
+    results$IPD <- c(results$IPD, mean(subset$ipdRatio, na.rm = TRUE))
+    start <- end - overlap
+  }
+  
+  df <- data.frame(results)
+  return(na.omit(df))
+}
+
+# Calculate correlations for varying window sizes
+windowSizes <- c(seq(100, 900, 100), seq(1000, 40000, 1000), seq(50000, 90000, 10000), c(100000, 150000, 200000))
+correlations <- sapply(windowSizes, function(size) {
+  rollingData <- calculateRollingMeans(nanoVsSmrtMerged, range = size)
+  cor(rollingData$PoM, rollingData$IPD, use = "complete.obs")
+})
+
+# Compile and adjust correlations data
+nanoVsSmrtCorrelations <- data.frame(Section = c(1, windowSizes), Correlation = c(cor(nanoVsSmrtMerged$ipdRatio, nanoVsSmrtMerged$meanPoM, use = "complete.obs"), correlations))
+save(nanoVsSmrtCorrelations, file="../../RData/Supplementary_Data/nanoVsSmrtCorrelations.RData")
+
+```
+
+# Plot of made in SFigure 1
+```{r}
+load("../../RData/Supplementary_Data/nanoVsSmrtCorrelations.RData")
+# Main plot
+p1 <- ggplot(nanoVsSmrtCorrelations, aes(x = Section, y = Correlation)) +
+  geom_point(size = 1.5) +
+  theme_pubr() + 
+  theme(text = element_text(size = 20)) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 1.0), breaks = seq(0, 1.00, by = .1)) +
+  xlab("Section Size (bp)") + 
+  ylab("Correlation between IPD ratio and P.o.M")
+
+# Smaller inset plot
+df2 <- nanoVsSmrtCorrelations[1:15, ]
+p2 <- ggplot(df2, aes(x = Section, y = Correlation)) +
+  geom_point(size = 0.8) +
+  geom_point(data = df2[df2$Section %in% c(1, 5000), ], size = 0.8) +
+  theme_pubr() + 
+  theme(text = element_text(size = 12), legend.position = "none", axis.text.x = element_text(angle = 0, vjust = 0.5, hjust = 0.5)) +
+  scale_x_continuous(expand = c(0, 0), limits = c(-100, 5100), breaks = c(1, 1000, 2000, 3000, 4000, 5000)) +
+  ylab("") + 
+  xlab("")
+
+# Combine the plots
+f1 <- p1 + 
+  annotation_custom(ggplotGrob(p2), xmin = 100000, xmax = max(nanoVsSmrtCorrelations$Section) + 8000, ymin = 0.0, ymax = 0.55) +
+  theme_pubr() +
+  theme(legend.position = "none")
+
+f1
+```
+
+
+# Sfigure 2 code and plot in GANTC_distribution.Rmd
+```{r}
+```
+
+# SFigure 3 
+# Use the same function used in main figure
+```{r fig.height=9, fig.width=21}
+# loading stationary data
+Stationary_wt_Brucella_ch_1 <- read_rds("../../RData/Supplementary_Data/wt_Brucella_stationary_chromosome_1_clean.rds")%>%
+  mutate(Start= ifelse(Start > (2006612), Start -2006612, Start + abs(2121359-2006612)))
+Stationary_wt_Brucella_ch_2 <- read_rds("../../RData/Supplementary_Data/wt_Brucella_stationary_chromosome_2_clean.rds")
+Stationary_dlon_Brucella_ch_1 <- read_rds("../../RData/Supplementary_Data/dlon_Brucella_stationary_chromosome_1_clean.rds")%>%  
+  mutate(Start= ifelse(Start > (2006612), Start -2006612, Start + abs(2121359-2006612)))
+Stationary_dlon_Brucella_ch_2 <- read_rds("../../RData/Supplementary_Data/dlon_Brucella_stationary_chromosome_2_clean.rds")
+Stationary_ccrm_Brucella_ch_1 <- read_rds("../../RData/Supplementary_Data/overexpressed_Brucella_stationary_chromosome_1_clean.rds")%>%  
+  mutate(Start= ifelse(Start > (2006612), Start -2006612, Start + abs(2121359-2006612)))
+Stationary_ccrm_Brucella_ch_2 <- read_rds("../../RData/Supplementary_Data/overexpressed_Brucella_stationary_chromosome_1_clean.rds")
+
+#Use function described in main figure.rmd
+plotMethylationProbability <- function(methylationData, genome_length, title, pointColor, lineColor){
+  # Define default sizes for points and lines in the plot.
+  pointSize = 0.45
+  lineSize = 1.5
+  # Define the origins and terminus points for plotting.
+  origin_1 = 0
+  terminus = genome_length / 2  
+  origin_2 = genome_length
+  # Perform linear regression on methylation data, adjusting positions relative to the genome's midpoint.
+  Linear_Regression <- lm(methylationData$meanPoM ~ 
+                            ifelse(methylationData$Start >= terminus, 
+                                   genome_length - methylationData$Start,
+                                   methylationData$Start))
+  # Create the plot using ggplot2, starting with methylation data points.
+  methylationData %>%
+    ggplot(aes(Start, meanPoM)) +
+    geom_point(size = pointSize, alpha=0.35,  color=pointColor) +
+    # Add segments representing the linear regression line before and after the terminus.
+    geom_segment(aes(x = (terminus),
+                   y = Linear_Regression[["coefficients"]][["(Intercept)"]]+ 
+                       Linear_Regression[["coefficients"]][2]*(terminus), 
+                   xend = origin_2 , 
+                   yend = Linear_Regression[["coefficients"]][["(Intercept)"]]+ 
+                      Linear_Regression[["coefficients"]][2]*(origin_1)), linewidth = 1, color=lineColor)+
+  geom_segment(aes(x = terminus,
+                   y = Linear_Regression[["coefficients"]][["(Intercept)"]]+ 
+                      Linear_Regression[["coefficients"]][2]*(terminus),
+                   xend = origin_1 , 
+                   yend = Linear_Regression[["coefficients"]][["(Intercept)"]]+ 
+                          Linear_Regression[["coefficients"]][2]*origin_1), linewidth = 1, color=lineColor)+
+  # Set the plot title and theme.
+  ggtitle(title) +
+  theme_pubr() +
+  # Customize the x-axis to label origins and terminus.
+  scale_x_continuous(
+    labels = function(x) {
+      ifelse(x == origin_1,
+             "Origin",
+             ifelse(x == origin_2, 
+                    "Origin", 
+                    "Terminus"))},
+    expand = c(0, 0),
+    limits = c(origin_1 -100000 , origin_2 + 100000), 
+    breaks = c(origin_1, terminus, origin_2)
+  ) +
+  # Customize the y-axis for the probability of methylation.
+  scale_y_continuous(
+    expand = c(0, 0),
+    limits = c(-0.05, 1.05),
+    breaks = c(0.0, 0.5, 1.0)
+  ) +
+  # Remove x-label and adjust plot title and y-label styling.
+  xlab("") + theme(plot.title = element_text(hjust = 0.5))+
+  ylab("Probability of Methylation")  
+}
+
+plotMethylationProbability(Stationary_wt_Brucella_ch_1, 
+                           2121359, 
+                           "Wild Type Caulobacter",
+                           "black",
+                           linecolor="black", )
+
+
+plotMethylationProbability(Stationary_ccrm_Brucella_ch_1,
+                           2121359, 
+                          "ccrM overexpression",
+                          "#00BA38","#00952d")
+
+plotMethylationProbability(Stationary_dlon_Brucella_ch_1,
+                           2121359,
+                           "∆lon",
+                           "#619CFF","#619CFF") 
+
+plotMethylationProbability(Stationary_wt_Brucella_ch_2,
+                           1156948,
+                           "Wild Type Caulobacter",
+                           "black","black")
+  
+plotMethylationProbability(Stationary_ccrm_Brucella_ch_2,
+                           1156948,
+                           "ccrM overexpression",
+                           "#00BA38","#00952d")
+
+plotMethylationProbability(Stationary_dlon_Brucella_ch_2,
+                           1156948, 
+                           "∆lon",
+                           "#619CFF",linecolor="#619CFF") 
+```
+
+
+####################################################################################
+# Note that Sfigure4 and SFigure5 require raw outputs of either mCaller or Dorado. #
+#  Thus, the following code, is to display the logic used to create the figures    #
+####################################################################################
+
+# Identify potential motifs for R10.4.1 data
+```{r}
+
+high_quality_adenines <- function(data, GANTC_data, ref){
+  ref <- read.fasta(ref)
+  concatenated_sequence <- paste(unlist(ref), collapse = "")
+  
+  # Use gregexpr to find possible adenines
+  matches <- gregexpr("a", tolower(concatenated_sequence), ignore.case = TRUE)
+
+  # Extract positions (indices) of the matches
+  positions <- unlist(matches)
+
+  data <- data[(data$V2 %in% positions) & data$V5>800 & data$V10 > 50 , ]
+
+  adjacent_values <- unique(c(GANTC_data$V2, GANTC_data$V2 + 1, GANTC_data$V2 - 1))
+
+  filtered_data <- data[!data$V2 %in% adjacent_values, ]
+
+ggplot(filtered_data)+
+  geom_point(aes(V2,V11/100))+ 
+  geom_hline(yintercept = 0.33, alpha= 2, size= 2, color= 'red', )
+}
+
+#high_quality_adenines(data= read.table(<example: "wt_Brucella_ch1.bed">,
+  #                               header = FALSE, sep = "\t"),
+  #                    GANTC_data = <example: wt_Brucella_chromosome1>,
+    #                  ref= <example: Brucella_reference.fasta>)
+
+```
+
+# Sfigure 4
+```{r  fig.height=4.5, fig.width=7}
+
+plot_other_motifs <- function(data_path, genome){
+  full_genome = read.fasta(genome)  
+  genome_sequence <- paste(unlist(full_genome), collapse = "")
+  data <- read.table(data_path, header = FALSE, sep = "\t")
+  
+  # Identify positions of previously identified motifs
+  motif1_pattern <- "cgaccag"
+  motif2_pattern <- "cgac[atcg]{7}T[ag]{1}gg"
+  positions1 <- gregexpr(pattern = motif1_pattern, text = genome_sequence, ignore.case = TRUE)
+  positions2 <- gregexpr(pattern = motif2_pattern, text = genome_sequence, ignore.case = TRUE)
+  
+  # Convert positions to methylated adenine position
+  positions_list1 <- unique(unlist(positions1) + 4)
+  positions_list2 <- c((unlist(positions2) + 1), (unlist(positions2) + 10))
+  
+  # Filtering data based on positions and motifs
+  filtered1 <- data %>%
+    filter(V2 %in% positions_list1)
+  
+  filtered2 <- data %>%
+    filter(V2 %in% positions_list2) 
+  
+  # Calculate the mean probability of methylation for each motif
+  filtered1$meanPoM <- sapply(strsplit(filtered1$V8, ","), function(x) mean(as.numeric(x)))
+  filtered2$meanPoM <- sapply(strsplit(filtered2$V8, ","), function(x) mean(as.numeric(x)))
+
+  ggplot() +
+    geom_point(data = filtered1, aes(x = V2, y = meanPoM, alpha = 0.4, color = "a")) +
+    geom_point(data = filtered2, aes(x = V2, y = meanPoM, alpha = 0.4, color = "b")) +
+    scale_x_continuous(
+      labels = function(x) {
+        ifelse(x == min(x), "Origin", ifelse(x == max(x), "Terminus", ""))
+      },
+      expand = c(0, 0),
+      limits = c(-100000, genomelength + 100000),
+      breaks = c(0, genomelength / 2, genomelength)
+    ) +
+    scale_y_continuous(
+      expand = c(0, 0),
+      limits = c(-0.05, 1.05),
+      breaks = seq(0.0, 1.0, by = 0.1)
+    ) +
+    labs(y = "Probability of Methylation") +
+    theme_pubr() +
+    theme(
+      legend.position = c(0.5, 0.075),
+      legend.box.background = element_rect(color = "black", size = 1),
+      legend.title = element_blank(),
+      legend.direction = "horizontal"
+    ) +
+    scale_color_manual(
+      values = c("a" = "red", "b" = "blue"),
+      name = "",
+      labels = c("5′-CGACCAG-3′", "5′-CGAC(N7)TRGG-3′")
+    ) +
+    guides(alpha = FALSE) # Hide alpha
+}
+
+ # Requires raw output of mCaller, due to size 30+ GB, it is not included 
+ #                         V
+ #plot_other_motifs("WT_nanopore.methylation.summary.bed", "../../RData/Supplementary_Data/Caulobacter_crescentus_NA1000.fasta" )
+
+```
+
+#Sfigure 5
+```{r fig.height=8, fig.width=12}
+brucella_other_motifs <- function(data, genome, extra=F, title, color){
+  
+  genomelength <- length(genome[[1]])
+positions1 <- gregexpr(pattern = "acc[a,t,g,c]{5}gtcg", text = paste(unlist(genome),collapse=""), ignore.case = TRUE)
+
+
+positions2 <- gregexpr(pattern = "cgac[a,t,g,c]{5}ggt", text = paste(unlist(genome),collapse=""), ignore.case = TRUE)
+positions_list1 <- unlist(positions1)
+positions_list2 <- unlist(positions2)
+
+setwd("/Users/mbcampbell/Downloads/")
+
+filtered1 <- data[sapply(data$V2, function(v2) {
+  any(v2 >= (positions_list1 -1) & v2 <= (positions_list1+ 1)) |
+   any(v2 == (positions_list1 +9) )
+}), ]
+
+other_motifs<- filtered1 
+
+print(nrow(other_motifs))
+
+info1= lm( (other_motifs$V11/100) ~ other_motifs$V2 )
+
+ggplot()+
+  geom_point(data=other_motifs, aes(V2,V11/100),
+                   color=color, size=2, alpha= 1)+
+#  geom_point(data= others[! others$V2 %in% other_motifs$V2,], aes(V2,V11/100, alpha=0.4,
+   #                color="b"))+
+  geom_segment(aes(x = (genomelength/2),
+                   y = info1[["coefficients"]][["(Intercept)"]]+ 
+                     info1[["coefficients"]][2]*(genomelength/2), 
+                   xend = (genomelength) , 
+                   yend = info1[["coefficients"]][["(Intercept)"]]+ 
+                      info1[["coefficients"]][2]*(0)),
+                   color=color, alpha =0.7, size = 1.5)+
+  geom_segment(aes(x = (genomelength/2),
+                   y = info1[["coefficients"]][["(Intercept)"]]+ 
+                      info1[["coefficients"]][2]*(genomelength/2),
+                   xend = (0) , 
+                   yend = info1[["coefficients"]][["(Intercept)"]]+ 
+                      info1[["coefficients"]][2]*(0)),
+                   color=color, alpha =0.7, size = 1.5)+
+    scale_x_continuous(
+    labels = function(x) {
+      ifelse(x == min(x), "Origin",
+             ifelse(x == max(x), "Origin", "Terminus"))
+    },
+    expand = c(0, 0),
+    limits = c(-100000, max(genomelength) + 100000), 
+    breaks = c(0, max(genomelength) / 2, max(genomelength))
+  ) +
+  scale_y_continuous(
+    expand = c(0, 0),
+    limits = c(-0.05, 1.05),
+    breaks = c(seq(0.0, 1.0, by=0.1))
+  ) +
+  xlab("") + theme(plot.title = element_text(hjust = 0.5))+
+  ylab("Probability of Methylation")+ theme_pubr()+
+    theme(legend.position = c(0.5,0.075),
+        legend.box.background = element_rect(color = "black", size = 1),
+        legend.title = element_blank(),
+        legend.direction = "horizontal")+
+  ggtitle(title)+
+  guides(
+    alpha = FALSE  # Hide alpha legend
+  )
+}
+
+
+#brucella_stationary <- brucella_other_motifs(read.table("Nanopore_data/6mA_wt_Brucella_ch1.bed", header = FALSE, sep = "\t"),
+#genome = read.fasta("Brucella_melitensis_biovar_Abortus_2308_ch1.fasta"), title= "WT Chromosome 1", color="black") +
+
+
+
+```

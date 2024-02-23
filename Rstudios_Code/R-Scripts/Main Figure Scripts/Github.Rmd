@@ -94,7 +94,6 @@ plotMethylationProbability <- function(methylationData, genome_length, title, po
     limits = c(-0.05, 1.05),
     breaks = c(0.0, 0.5, 1.0)
   ) +
-  # Remove x-label and adjust plot title and y-label styling.
   xlab("") + theme(plot.title = element_text(hjust = 0.5))+
   ylab("Probability of Methylation")  
 }
@@ -299,7 +298,8 @@ compareMethylationAndTranscriptionalDifferences <- function( genomicData1, genom
 }
 
 compareMethylationAndTranscriptionalDifferences( genomicData1= wt_Caulobacter, genomicData2=dlon_Caulobacter,
-                                                 transcriptional_data= load("../../RData/Caulobacter_Data/caulobacter_rna_seq.rds"), genome_reference= read.csv("../../RData/Caulobacter_Data/caulobacter_reference.csv"))
+          transcriptional_data= load("../../RData/Caulobacter_Data/caulobacter_rna_seq.rds"), 
+          genome_reference= read.csv("../../RData/Caulobacter_Data/caulobacter_reference.csv"))
 ```
 
 ## compareMethylationMotifs:
@@ -337,14 +337,14 @@ compareMethylationMotifs(genomicData1= wt_Caulobacter, genomicData2= dalkb_Caulo
 ```{r}
 # Note that origin of Brucella chromosome 1, is not position at 1 in reference 
 
-wt_Brucella_chromosome1 <-  read_rds("wt_Brucella_chromosome1_clean.rds") %>% mutate(V2= ifelse(V2 > (2006612), V2 -2006612, V2 + abs(2121359-2006612)))
-wt_Brucella_chromosome2 <- read_rds("wt_Brucella_chromosome2_clean.rds")
-dlon_Brucella_chromosome1 <- read_rds("dlon_Brucella_chromosome1_clean.rds") %>% mutate(V2= ifelse(V2 > (2006612), V2 -2006612, V2 + abs(2121359-2006612)))
-dlon_Brucella_chromosome2 <- read_rds("dlon_Brucella_chromosome2_clean.rds")
-ccrm_Brucella_chromosome1 <- read_rds("ccrm_Brucella_chromosome1_clean.rds") %>%  mutate(V2= ifelse(V2 > (2006612), V2 -2006612, V2 + abs(2121359-2006612)))
-ccrm_Brucella_chromosome2 <- read_rds("ccrm_Brucella_chromosome2_clean.rds")
-mucr_Brucella_chromosome1 <- read_rds("mucr_Brucella_chromosome1_clean.rds") %>% mutate(V2= ifelse(V2 > (2006612), V2 -2006612, V2 + abs(2121359-2006612)))
-mucr_Brucella_chromosome2 <- read_rds("mucr_Brucella_chromosome2_clean.rds")
+wt_Brucella_chromosome1 <-  read_rds("../../RData/Brucella_Data/wt_Brucella_chromosome1_clean.rds") %>% mutate(V2= ifelse(V2 > (2006612), V2 -2006612, V2 + abs(2121359-2006612)))
+wt_Brucella_chromosome2 <- read_rds("../../RData/Brucella_Data/wt_Brucella_chromosome2_clean.rds")
+dlon_Brucella_chromosome1 <- read_rds("../../RData/Brucella_Data/dlon_Brucella_chromosome1_clean.rds") %>% mutate(V2= ifelse(V2 > (2006612), V2 -2006612, V2 + abs(2121359-2006612)))
+dlon_Brucella_chromosome2 <- read_rds("../../RData/Brucella_Data/dlon_Brucella_chromosome2_clean.rds")
+ccrm_Brucella_chromosome1 <- read_rds("../../RData/Brucella_Data/ccrm_Brucella_chromosome1_clean.rds") %>%  mutate(V2= ifelse(V2 > (2006612), V2 -2006612, V2 + abs(2121359-2006612)))
+ccrm_Brucella_chromosome2 <- read_rds("../../RData/Brucella_Data/ccrm_Brucella_chromosome2_clean.rds")
+mucr_Brucella_chromosome1 <- read_rds("../../RData/Brucella_Data/mucr_Brucella_chromosome1_clean.rds") %>% mutate(V2= ifelse(V2 > (2006612), V2 -2006612, V2 + abs(2121359-2006612)))
+mucr_Brucella_chromosome2 <- read_rds("../../RData/Brucella_Data/mucr_Brucella_chromosome2_clean.rds")
 ```
 
 ## plotMethylationProbability:
@@ -422,10 +422,10 @@ plotMethylationProbability(ccrm_Brucella_chromosome2 , genome_length=1156948,
 ```{r}
 
 # Reload chromosome 1 data
-wt_Brucella_chromosome1 <-  read_rds("wt_Brucella_chromosome1_clean.rds")
-dlon_Brucella_chromosome1 <- read_rds("dlon_Brucella_chromosome1_clean.rds") 
-ccrm_Brucella_chromosome1 <- read_rds("ccrm_Brucella_chromosome1_clean.rds") 
-mucr_Brucella_chromosome1 <- read_rds("mucr_Brucella_chromosome1_clean.rds") 
+wt_Brucella_chromosome1 <-  read_rds("../../RData/Brucella_Data/wt_Brucella_chromosome1_clean.rds")
+dlon_Brucella_chromosome1 <- read_rds("../../RData/Brucella_Data/dlon_Brucella_chromosome1_clean.rds") 
+ccrm_Brucella_chromosome1 <- read_rds("../../RData/Brucella_Data/ccrm_Brucella_chromosome1_clean.rds") 
+mucr_Brucella_chromosome1 <- read_rds("../../RData/Brucella_Data/mucr_Brucella_chromosome1_clean.rds") 
 
 
 # Function to merge and reduce methylation data 
@@ -471,7 +471,7 @@ mucr_binding_information <- function(methylation_data, chromosome) {
 
 
 # Load MucR binding data
-mucR <- read.csv("../../../Downloads/mucRBinding.csv")
+mucR <- read.csv("../../RData/Brucella_Data/mucRBinding.csv")
 
 brucellaMucrBindingDataCH1<- mucr_binding_information(methylation_data = brucellaMethylationDataCH1, chromosome = 1)
 brucellaMucrBindingDataCH2<- mucr_binding_information(methylation_data = brucellaMethylationDataCH2, chromosome = 2)

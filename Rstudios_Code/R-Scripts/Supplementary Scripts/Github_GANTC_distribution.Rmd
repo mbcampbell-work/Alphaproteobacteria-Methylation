@@ -60,349 +60,36 @@ calculateGenomeStatistics <- function(fullGenome, geneInfo, class, order, specie
   return(df)
 }
 
-setwd("/Users/mbcampbell/Downloads/Alphaproteo/Caulobacter")
 ```
 
+
+# Example
 ```{r}
-a <- calculateGenomeStatistics(fullGenome = read.fasta("Caulobacter_crescentus_NA1000.fasta"), 
-                               geneInfo = read.fasta("Caulobacter_crescentus_NA1000.txt"), 
+
+# Full genome fasta was reference genome downloaded from NCBI 
+# Gene genome .txt was gene info file downloaded from NCBI 
+calculateGenomeStatistics(fullGenome = read.fasta("../../RData/Supplementary_Data/Caulobacter_crescentus_NA1000.fasta"), 
+                               geneInfo = read.fasta("../../RData/Supplementary_Data/Caulobacter_crescentus_NA1000.txt"), 
                                class = "Alphaproteobacteria", 
                                order = "Caulobacterales", 
                                species = "C. Crescentus", 
                                strain = "NA_1000", 
                                chromosomes = 1)
-
-b <- calculateGenomeStatistics(fullGenome = read.fasta("Asticcacaulis_excentricus_CB_48_ch1.fasta"), 
-                               geneInfo = read.fasta("Asticcacaulis_excentricus_CB_48_ch1.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Caulobacterales", 
-                               species = "A. excentricus", 
-                               strain = "CB_48", 
-                               chromosomes = 1)
-
-c <- calculateGenomeStatistics(fullGenome = read.fasta("Asticcacaulis_excentricus_CB_48_ch2.fasta"), 
-                               geneInfo = read.fasta("Asticcacaulis_excentricus_CB_48_ch2.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Caulobacterales", 
-                               species = "A. excentricus", 
-                               strain = "CB_48", 
-                               chromosomes = 2)
-
-d <- calculateGenomeStatistics(fullGenome = read.fasta("Caulobacter_segnis_ATCC_21756.fasta"), 
-                               geneInfo = read.fasta("Caulobacter_segnis_ATCC_21756.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Caulobacterales", 
-                               species = "C. segnis", 
-                               strain = "ATCC_21756", 
-                               chromosomes = 1)
-
-e <- calculateGenomeStatistics(fullGenome = read.fasta("Phenylobacterium_zucineum_HLK1.fasta"), 
-                               geneInfo = read.fasta("Phenylobacterium_zucineum_HLK1.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Caulobacterales", 
-                               species = "P. zucineum", 
-                               strain = "HLK1", 
-                               chromosomes = 1)
-
-f <- calculateGenomeStatistics(fullGenome = read.fasta("Asticcacaulis_excentricus_CB_48_ch1.fasta"), 
-                               geneInfo = read.fasta("Asticcacaulis_excentricus_CB_48_ch1.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Caulobacterales", 
-                               species = "A. excentricus", 
-                               strain = "CB_48", 
-                               chromosomes = 1)
-
-g <- calculateGenomeStatistics(fullGenome = read.fasta("Asticcacaulis_excentricus_CB_48_ch2.fasta"), 
-                               geneInfo = read.fasta("Asticcacaulis_excentricus_CB_48_ch2.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Caulobacterales", 
-                               species = "A. excentricus", 
-                               strain = "CB_48", 
-                               chromosomes = 2)
 ```
 
 
 ```{r}
-h <- calculateGenomeStatistics(fullGenome = read.fasta("Caulobacter_mirabilis_FWC_38.fasta"), 
-                               geneInfo = read.fasta("Caulobacter_mirabilis_FWC_38.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Caulobacterales", 
-                               species = "C. mirabilis", 
-                               strain = "FWC_38", 
-                               chromosomes = 1)
+Alphaproteobacteria <-read_csv("../../RData/Supplementary_Data/Alphaproteobacteria.csv")
 
-i <- calculateGenomeStatistics(fullGenome = read.fasta("Caulobacter_flavus_RHGG3.fasta"), 
-                               geneInfo = read.fasta("Caulobacter_flavus_RHGG3.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Caulobacterales", 
-                               species = "C. flavus", 
-                               strain = "RHGG3", 
-                               chromosomes = 1)
-
-j <- calculateGenomeStatistics(fullGenome = read.fasta("Brevundimonas_pondensis_LVF1.fasta"), 
-                               geneInfo = read.fasta("Brevundimonas_pondensis_LVF1.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Caulobacterales", 
-                               species = "B. pondensis", 
-                               strain = "LVF1", 
-                               chromosomes = 1)
-
-k <- calculateGenomeStatistics(fullGenome = read.fasta("Brevundimonas_subvibrioides_ATCC_15264.fasta"), 
-                               geneInfo = read.fasta("Brevundimonas_subvibrioides_ATCC_15264.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Caulobacterales", 
-                               species = "B. subvibrioides", 
-                               strain = "ATCC_15264", 
-                               chromosomes = 1)
-
-l <- calculateGenomeStatistics(fullGenome = read.fasta("Caulobacter_crescentus_CB15.fasta"), 
-                               geneInfo = read.fasta("Caulobacter_crescentus_CB15.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Caulobacterales", 
-                               species = "C. crescentus", 
-                               strain = "CB15", 
-                               chromosomes = 1)
-```
-
-```{r}
-Caulobacterales <- rbind(a,b,c,d,e,f,g,h,i,j,k,l)
-
-rm(a,b,c,d,e,f,g,h,i,j,k,l)
-```
-
-```{r}
-a <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_abortus_S19_ch1.fasta"), 
-                               geneInfo = read.fasta("Brucella_abortus_S19_ch1.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. abortus", 
-                               strain = "S19", 
-                               chromosomes = 1)
-
-b <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_abortus_S19_ch2.fasta"), 
-                               geneInfo = read.fasta("Brucella_abortus_S19_ch2.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. abortus", 
-                               strain = "S19", 
-                               chromosomes = 2)
-
-c <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_ovis_ATCC_25840.fasta"), 
-                               geneInfo = read.fasta("Brucella_ovis_ATCC_25840.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. ovis", 
-                               strain = "ATCC_25840", 
-                               chromosomes = 1)
-
-f <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_abortus_bv__1_9_941_ch1.fasta"), 
-                               geneInfo = read.fasta("Brucella_abortus_bv__1_9_941_ch1.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. abortus", 
-                               strain = "1_9_941", 
-                               chromosomes = 1)
-
-g <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_abortus_bv__1_9_941_ch2.fasta"), 
-                               geneInfo = read.fasta("Brucella_abortus_bv__1_9_941_ch2.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. abortus", 
-                               strain = "1_9_941", 
-                               chromosomes = 2)
-
-h <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_abortus_S19_ch1.fasta"), 
-                               geneInfo = read.fasta("Brucella_abortus_S19_ch1.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. abortus", 
-                               strain = "S19", 
-                               chromosomes = 1)
-
-i <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_abortus_S19_ch2.fasta"), 
-                               geneInfo = read.fasta("Brucella_abortus_S19_ch2.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. abortus", 
-                               strain = "S19", 
-                               chromosomes = 2)
-
-j <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_melitensis_biovar_Abortus_2308_ch1.fasta"), 
-                               geneInfo = read.fasta("Brucella_melitensis_biovar_Abortus_2308_ch1.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. melitensis", 
-                               strain = "2308", 
-                               chromosomes = 1)
-
-k <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_melitensis_biovar_Abortus_2308_ch2.fasta"), 
-                               geneInfo = read.fasta("Brucella_melitensis_biovar_Abortus_2308_ch2.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. melitensis", 
-                               strain = "2308", 
-                               chromosomes = 2)
-
-l <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_abortus_A13334_ch1.fasta"), 
-                               geneInfo = read.fasta("Brucella_abortus_A13334_ch1.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. abortus", 
-                               strain = "A13334", 
-                               chromosomes = 1)
-
-m <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_abortus_A13334_ch2.fasta"), 
-                               geneInfo = read.fasta("Brucella_abortus_A13334_ch2.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. abortus", 
-                               strain = "A13334", 
-                               chromosomes = 2)
-
-n <- calculateGenomeStatistics(fullGenome = read.fasta("Agrobacterium_vitis_S4_ch1.fasta"), 
-                               geneInfo = read.fasta("Agrobacterium_vitis_S4_ch1.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "A. vitis", 
-                               strain = "S4", 
-                               chromosomes = 1)
-
-o <- calculateGenomeStatistics(fullGenome = read.fasta("Agrobacterium_vitis_S4_ch2.fasta"), 
-                               geneInfo = read.fasta("Agrobacterium_vitis_S4_ch2.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "A. vitis", 
-                               strain = "S4", 
-                               chromosomes = 2)
-```
-
-```{r}
-Rhizobiales <- rbind(a,b,c,f,g,h,i,j,k,l,m,n,o)
-rm(a,b,c,f,g,h,i,j,k,l,m,n,o)
-```
-
-
-```{r}
-a <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_canis_ATCC_23365_ch1.fasta"), 
-                               geneInfo = read.fasta("Brucella_canis_ATCC_23365_ch1.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "Brucella_canis_ATCC_23365_ch1", 
-                               strain = "Brucella_canis_ATCC_23365_ch1", 
-                               chromosomes = 1)
-
-b <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_canis_ATCC_23365_ch2.fasta"), 
-                               geneInfo = read.fasta("Brucella_canis_ATCC_23365_ch2.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. canis", 
-                               strain = "ATCC_23365", 
-                               chromosomes = 2)
-
-
-c <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_pinnipedialis_B2_94_ch1.fasta"), 
-                               geneInfo = read.fasta("Brucella_pinnipedialis_B2_94_ch1.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. pinnipedialis", 
-                               strain = "B2_94", 
-                               chromosomes = 1)
-
-d <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_pinnipedialis_B2_94_ch2.fasta"), 
-                               geneInfo = read.fasta("Brucella_pinnipedialis_B2_94_ch2.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. pinnipedialis", 
-                               strain = "B2_94", 
-                               chromosomes = 2)
-
-e <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_suis_1330_ch1.fasta"), 
-                               geneInfo = read.fasta("Brucella_suis_1330_ch1.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. suis", 
-                               strain = "1330", 
-                               chromosomes = 1)
-
-f <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_suis_1330_ch2.fasta"), 
-                               geneInfo = read.fasta("Brucella_suis_1330_ch2.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. suis", 
-                               strain = "1330", 
-                               chromosomes = 2)
-
-g <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_suis_ATCC_23445_ch1.fasta"), 
-                               geneInfo = read.fasta("Brucella_suis_ATCC_23445_ch1.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. suis", 
-                               strain = "ATCC_23445", 
-                               chromosomes = 1)
-
-h <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_suis_ATCC_23445_ch2.fasta"), 
-                               geneInfo = read.fasta("Brucella_suis_ATCC_23445_ch2.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. suis", 
-                               strain = "ATCC_23445", 
-                               chromosomes = 2)
-
-i <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_suis_VBI22_ch1.fasta"), 
-                               geneInfo = read.fasta("Brucella_suis_VBI22_ch1.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. suis", 
-                               strain = "VBI22", 
-                               chromosomes = 1)
-
-j <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_suis_VBI22_ch2.fasta"), 
-                               geneInfo = read.fasta("Brucella_suis_VBI22_ch2.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. suis", 
-                               strain = "VBI22", 
-                               chromosomes = 2)
-
-k <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_canis_HSK_A52141_ch1.fasta"), 
-                               geneInfo = read.fasta("Brucella_canis_HSK_A52141_ch1.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. canis", 
-                               strain = "HSK_A52141", 
-                               chromosomes = 1)
-
-l <- calculateGenomeStatistics(fullGenome = read.fasta("Brucella_canis_HSK_A52141_ch2.fasta"), 
-                               geneInfo = read.fasta("Brucella_canis_HSK_A52141_ch2.txt"), 
-                               class = "Alphaproteobacteria", 
-                               order = "Rhizobiales", 
-                               species = "B. canis", 
-                               strain = "HSK_A52141", 
-                               chromosomes = 2)
-```
-
-
-
-```{r}
-Rhizobiales2 <- rbind(a,b,c,d,e,f,g,h,i,j,k,l)
-rm(a,b,c,d,e,f,g,h,i,j,k,l)
-
-```
-
-
-```{r}
-
-Alphaproteobacteria <- rbind(Rhizobiales, Caulobacterales, Rhizobiales2)
-
-Alphaproteobacteria 
+Alphaproteobacteria %>%
   ggplot(aes(x = Order, y = CountedGANTC / ExpectedGANTC)) +
   geom_boxplot() +
   geom_hline(yintercept = 1, linetype = "solid", color = "black") +
   theme_classic() +
-  geom_point(data = Alphaproteobacteria %>% filter(Strain == "C.crescentus NA1000"), 
-             aes(x = Order, y = CountedGANTC / ExpectedGANTC), color = "red", size = 3) +
-  geom_point(data = Alphaproteobacteria %>% filter(Strain == "B.abortus 2308"), 
-             aes(x = Order, y = CountedGANTC / ExpectedGANTC), color = "blue", size = 3) +
+  geom_point(data = Alphaproteobacteria %>% filter(Strain == "NA_1000"), 
+             aes(x = Order, y = CountedGANTCAT / ExpectedGANTCAT, color = "C.crescentus NA1000"), size = 3) +
+  geom_point(data = Alphaproteobacteria %>% filter(Strain == "2308"), 
+             aes(x = Order, y = CountedGANTC / ExpectedGANTC,  color= paste("Brucella 2308","Chromosome: ", Chromosomes)), size = 3) +
   ylab("Counted / Expected # of GANTC site") + 
   theme(legend.position = "none") + 
   ggtitle("Genome wide") + 
@@ -415,8 +102,8 @@ Alphaproteobacteria %>%
   theme_classic() +
   geom_point(data = Alphaproteobacteria %>% filter(Strain == "NA_1000"), 
              aes(x = Order, y = CountedGANTCAT / ExpectedGANTCAT, color = "C.crescentus NA1000"), size = 3) +
-  geom_point(data = Alphaproteobacteria %>% filter(Strain == "S19"), 
-             aes(x = Order, y = CountedGANTCAT / ExpectedGANTCAT, color = "B.abortus 2308"), size = 3) +
+  geom_point(data = Alphaproteobacteria %>% filter(Strain == "2308"), 
+             aes(x = Order, y = CountedGANTCAT / ExpectedGANTCAT, color= paste("Brucella 2308","Chromosome: ", Chromosomes)), size = 3) +
   ylab("C / E # of GANTC site (N = A,T)") +
   theme(legend.position = "none") +
   ggtitle("N = A or T") +
@@ -430,7 +117,7 @@ Alphaproteobacteria %>%
   geom_point(data = Alphaproteobacteria %>% filter(Strain == "NA_1000"), 
              aes(x = Order, y = CountedGANTCGC / ExpectedGANTCGC, color = "C.crescentus NA1000"), size = 3) +
   geom_point(data = Alphaproteobacteria %>% filter(Strain == "2308"), 
-             aes(x = Order, y = CountedGANTCGC / ExpectedGANTCGC, color = "B.abortus 2308"), size = 3) +
+             aes(x = Order, y = CountedGANTCGC / ExpectedGANTCGC,  color= paste("Brucella 2308","Chromosome: ", Chromosomes)), size = 3) +
   ylab("C / E # of GANTC site (N = G,C)") +
   theme(legend.position = "none") +
   ggtitle("N = G or C") +
@@ -444,7 +131,7 @@ Alphaproteobacteria %>%
   geom_point(data = Alphaproteobacteria %>% filter(Strain == "NA_1000"), 
              aes(x = Order, y = CountedGANTCORF / ExpectedGANTCORF, color = "C.crescentus NA1000"), size = 3) +
   geom_point(data = Alphaproteobacteria %>% filter(Strain == "2308"), 
-             aes(x = Order, y = CountedGANTCORF / ExpectedGANTCORF, color = "B.abortus 2308"), size = 3) +
+             aes(x = Order, y = CountedGANTCORF / ExpectedGANTCORF,  color= paste("Brucella 2308","Chromosome: ", Chromosomes)), size = 3) +
   ylab("C / E # of GANTC site in ORF") +
   theme(legend.position = "none") +
   ggtitle("Genic") +
@@ -458,7 +145,7 @@ Alphaproteobacteria %>%
   geom_point(data = Alphaproteobacteria %>% filter(Strain == "NA_1000"), 
              aes(x = Order, y = CountedGANTCIntergenic / ExpectedGANTCIntergenic, color = "C.crescentus NA1000"), size =3)+
   geom_point(data = Alphaproteobacteria %>% filter(Strain == "2308"), 
-             aes(x = Order, y = CountedGANTCIntergenic / ExpectedGANTCIntergenic, color = "B.abortus 2308"), size = 3) +
+             aes(x = Order, y = CountedGANTCIntergenic / ExpectedGANTCIntergenic,  color= paste("Brucella 2308","Chromosome: ", Chromosomes)), size = 3) +
   ylab("C / E # of GANTC site in Intergenic") +
   theme(legend.position = "none") +
   ggtitle("Intergenic") +
