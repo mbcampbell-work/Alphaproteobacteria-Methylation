@@ -116,13 +116,13 @@ f1
 Stationary_wt_Brucella_ch_1 <- read_rds("../../RData/Supplementary_Data/wt_Brucella_stationary_chromosome_1_clean.rds")%>%
   mutate(Start= ifelse(Start > (2006612), Start -2006612, Start + abs(2121359-2006612)))
 Stationary_wt_Brucella_ch_2 <- read_rds("../../RData/Supplementary_Data/wt_Brucella_stationary_chromosome_2_clean.rds")
-Stationary_dlon_Brucella_ch_1 <- read_rds("../../RData/Supplementary_Data/dlon_Brucella_stationary_chromosome_1_clean.rds")%>%  
-  mutate(Start= ifelse(Start > (2006612), Start -2006612, Start + abs(2121359-2006612)))
+Stationary_dlon_Brucella_ch_1 <- read_rds("../../RData/Supplementary_Data/dlon_Brucella_stationary_chromosome_1_clean.rds")#%>%  
+ # mutate(Start= ifelse(Start > (2006612), Start -2006612, Start + abs(2121359-2006612)))
 Stationary_dlon_Brucella_ch_2 <- read_rds("../../RData/Supplementary_Data/dlon_Brucella_stationary_chromosome_2_clean.rds")
-Stationary_ccrm_Brucella_ch_1 <- read_rds("../../RData/Supplementary_Data/overexpressed_Brucella_stationary_chromosome_1_clean.rds")%>%  
-  mutate(Start= ifelse(Start > (2006612), Start -2006612, Start + abs(2121359-2006612)))
+Stationary_ccrm_Brucella_ch_1 <- read_rds("../../RData/Supplementary_Data/overexpressed_Brucella_stationary_chromosome_1_clean.rds")#%>%  
+ # mutate(Start= ifelse(Start > (2006612), Start -2006612, Start + abs(2121359-2006612)))
 Stationary_ccrm_Brucella_ch_2 <- read_rds("../../RData/Supplementary_Data/overexpressed_Brucella_stationary_chromosome_1_clean.rds")
-
+```
 #Use function described in main figure.rmd
 plotMethylationProbability <- function(methylationData, genome_length, title, pointColor, lineColor){
   # Define default sizes for points and lines in the plot.
